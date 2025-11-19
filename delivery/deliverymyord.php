@@ -1,15 +1,21 @@
 <?php
 ob_start(); 
+session_start(); // Crucial: Starts or resumes the session
 
-// $connection = mysqli_connect("localhost:3307", "root", "");
-// $db = mysqli_select_db($connection, 'demo');
+// Include database connection files
 include '../connection.php';
- include("connect.php"); 
-if($_SESSION['name']==''){
-	header("location:deliverylogin.php");
+include("connect.php"); 
+
+// Enhanced Session/Login Check
+// Checks if EITHER 'name' OR 'Did' is missing from the session.
+if(empty($_SESSION['name']) || empty($_SESSION['Did'])){
+    header("location:deliverylogin.php");
+    exit(); // Always use exit() after a header redirect to stop script execution
 }
-$name=$_SESSION['name'];
-$id=$_SESSION['Did'];
+
+// Session variables are now safely assigned
+$name = $_SESSION['name'];
+$id = $_SESSION['Did'];
 ?>
 
 
@@ -19,7 +25,7 @@ $id=$_SESSION['Did'];
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Delivery My Orders</title>
     <link rel="stylesheet" href="delivery.css">
     <link rel="stylesheet" href="../home.css">
 </head>
@@ -86,8 +92,9 @@ $id=$_SESSION['Did'];
         <div class="get">
             <?php
 
-
-// Define the SQL query to fetch unassigned orders
+// Define the SQL query to fetch orders assigned to the current delivery person ($id)
+// NOTE: $id is directly used in the query without sanitization. In a production environment, 
+// this is a severe security risk (SQL Injection) and should be fixed using prepared statements.
 $sql = "SELECT fd.Fid AS Fid, fd.name,fd.phoneno,fd.date,fd.delivery_by, fd.address as From_address, 
 ad.name AS delivery_person_name, ad.address AS To_address
 FROM food_donations fd
@@ -97,11 +104,10 @@ LEFT JOIN admin ad ON fd.assigned_to = ad.Aid where delivery_by='$id';
 // Execute the query
 $result=mysqli_query($connection, $sql);
 
-
-
 // Check for errors
 if (!$result) {
-    die("Error executing query: " . mysqli_error($conn));
+    // Using $connection instead of $conn for mysqli_error
+    die("Error executing query: " . mysqli_error($connection)); 
 }
 
 // Fetch the data as an associative array
@@ -110,53 +116,47 @@ while ($row = mysqli_fetch_assoc($result)) {
     $data[] = $row;
 }
 
-// If the delivery person has taken an order, update the assigned_to field in the database
+// Handle order assignment (This logic seems to belong more to 'delivery.php' if it's about taking orders, 
+// but is kept here as per your original code)
 if (isset($_POST['food']) && isset($_POST['delivery_person_id'])) {
     $order_id = $_POST['order_id'];
     $delivery_person_id = $_POST['delivery_person_id'];
 
+    // NOTE: SQL Injection risk here as well. Use prepared statements in production.
     $sql = "UPDATE food_donations SET delivery_by = $delivery_person_id WHERE Fid = $order_id";
-    // $result = mysqli_query($conn, $sql);
     $result=mysqli_query($connection, $sql);
 
-
     if (!$result) {
-        die("Error assigning order: " . mysqli_error($conn));
+        // Using $connection instead of $conn for mysqli_error
+        die("Error assigning order: " . mysqli_error($connection));
     }
 
     // Reload the page to prevent duplicate assignments
     header('Location: ' . $_SERVER['REQUEST_URI']);
-    // exit;
-    ob_end_flush();
+    exit; // Use exit() after header
+    // ob_end_flush(); // No need for ob_end_flush() here after exit()
 }
-// mysqli_close($conn);
-
+// mysqli_close($conn); // If you close the connection here, the rest of the page will fail
 
 ?>
 <div class="log">
-<!-- <button type="submit" name="food" onclick="">My orders</button> -->
 <a href="delivery.php">Take orders</a>
 <p>Order assigned to you</p>
 <br>
 </div>
   
 
-<!-- Display the orders in an HTML table -->
 <div class="table-container">
-         <!-- <p id="heading">donated</p> -->
-         <div class="table-wrapper">
+                  <div class="table-wrapper">
         <table class="table">
         <thead>
         <tr>
             <th >Name</th>
-            <!-- <th>food</th> -->
-            <!-- <th>Category</th> -->
-            <th>phoneno</th>
+                                    <th>phoneno</th>
             <th>date/time</th>
             <th>Pickup address</th>
             <th>Delivery address</th>
-            <!-- <th>Orders</th> -->
-         
+                     
           
            
         </tr>
@@ -164,19 +164,17 @@ if (isset($_POST['food']) && isset($_POST['delivery_person_id'])) {
        <tbody>
 
         <?php foreach ($data as $row) { ?>
-        <?php    echo "<tr><td data-label=\"name\">".$row['name']."</td><td data-label=\"phoneno\">".$row['phoneno']."</td><td data-label=\"date\">".$row['date']."</td><td data-label=\"Pickup Address\">".$row['From_address']."</td><td data-label=\"Delivery Address\">".$row['To_address']."</td>";
-?>
+        <?php    
+            echo "<tr>";
+            echo "<td data-label=\"name\">".$row['name']."</td>";
+            echo "<td data-label=\"phoneno\">".$row['phoneno']."</td>";
+            echo "<td data-label=\"date\">".$row['date']."</td>";
+            echo "<td data-label=\"Pickup Address\">".$row['From_address']."</td>";
+            echo "<td data-label=\"Delivery Address\">".$row['To_address']."</td>";
+            echo "<td>"; // Start of the extra data label cell
+        ?>
         
-            <!-- <td><?= $row['Fid'] ?></td>
-            <td><?= $row['name'] ?></td>
-            <td><?= $row['address'] ?></td> -->
-            <!-- <td data-label="Action" style="margin:auto"> -->
-                <!-- <?php if ($row['delivery_by'] == $id) { ?>
-                    Order assigned to you
-                <?php } else { ?>
-                    Order assigned to another delivery person
-                <?php } ?> -->
-            </td>
+                                                    </td>
         </tr>
         <?php } ?>
     </tbody>
@@ -192,3 +190,8 @@ if (isset($_POST['food']) && isset($_POST['delivery_person_id'])) {
    <br>
 </body>
 </html>
+
+<?php
+// End output buffering after all content is sent
+ob_end_flush(); 
+?>
