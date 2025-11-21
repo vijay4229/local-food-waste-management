@@ -58,28 +58,33 @@ Follow these steps to run the project on your local machine:
        date DATETIME DEFAULT CURRENT_TIMESTAMP,
        PRIMARY KEY (id)
    );
-````
 
-2.  **Run this command** to enable delivery status tracking:
-    ALTER TABLE food_donations ADD delivery_status VARCHAR(50) DEFAULT 'Pending';
-    ```
+### Enable Delivery Status Tracking
+SQL:
+    ALTER TABLE food_donations 
+    ADD delivery_status VARCHAR(50) DEFAULT 'Pending';
 
-### 5\. Configure Connection
-
-  - Open `connection.php` and `admin/connect.php`.
-  - Ensure the credentials match your XAMPP settings (Default user: `root`, password: empty).
-    ```php
+### Database Connection (PHP)
+PHP:
+    <?php
     $connection = mysqli_connect("localhost", "root", "");
-    ```
+    ?>
 
-### 6\. Run the Application
+---
 
-  - Open your browser.
-  - Type: `http://localhost/food-waste-management-system/`
+## ▶️ Run Application
+Visit:  
+`http://localhost/food-waste-management-system/`
 
-## 🧪 How to Test the Flow
+---
 
-1.  **User:** Register and Donate Food.
-2.  **Admin:** Log in -\> Click the **Bell Icon** to see the alert -\> Go to "Donates".
-3.  **Delivery Boy:** Log in -\> Click "Take Order" -\> Go to "My Orders" -\> Click "Mark Delivered".
-4.  **Admin:** Refresh "Donates" page to see status change to **"Delivered"**.
+## 🧪 Test Workflow
+- User: Register → Donate Food  
+- Admin: Check Notifications → View Donations  
+- Delivery Boy: Take Order → Mark Delivered  
+- Admin: Refresh → Status becomes Delivered  
+
+---
+
+## 📜 License
+This project is **open-source** for educational use.
