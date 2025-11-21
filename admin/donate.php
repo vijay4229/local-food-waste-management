@@ -16,13 +16,11 @@ if($_SESSION['name']==''){
     <title>Donations List</title> 
     
     <?php
-    // Ensure connection uses standard port
     $connection=mysqli_connect("localhost","root","");
     $db=mysqli_select_db($connection,'demo');
     ?>
 
     <style>
-        /* NOTIFICATION STYLES */
         .notification-box { position: relative; cursor: pointer; margin-right: 20px; display: flex; align-items: center; }
         .notification-badge { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; display: none; }
         .notification-dropdown { display: none; position: absolute; right: 0; top: 40px; background: white; width: 300px; box-shadow: 0px 5px 15px rgba(0,0,0,0.2); border-radius: 5px; z-index: 1000; overflow: hidden; border: 1px solid #ddd; }
@@ -42,42 +40,16 @@ if($_SESSION['name']==''){
 
         <div class="menu-items">
             <ul class="nav-links">
-                <li><a href="admin.php">
-                    <i class="uil uil-estate"></i>
-                    <span class="link-name">Dahsboard</span>
-                </a></li>
-                <li><a href="analytics.php">
-                    <i class="uil uil-chart"></i>
-                    <span class="link-name">Analytics</span>
-                </a></li>
-                <li><a href="donate.php">
-                    <i class="uil uil-heart"></i>
-                    <span class="link-name">Donates</span>
-                </a></li>
-                <li><a href="feedback.php">
-                    <i class="uil uil-comments"></i>
-                    <span class="link-name">Feedbacks</span>
-                </a></li>
-                <li><a href="adminprofile.php">
-                    <i class="uil uil-user"></i>
-                    <span class="link-name">Profile</span>
-                </a></li>
+                <li><a href="admin.php"><i class="uil uil-estate"></i><span class="link-name">Dahsboard</span></a></li>
+                <li><a href="analytics.php"><i class="uil uil-chart"></i><span class="link-name">Analytics</span></a></li>
+                <li><a href="donate.php"><i class="uil uil-heart"></i><span class="link-name">Donates</span></a></li>
+                <li><a href="feedback.php"><i class="uil uil-comments"></i><span class="link-name">Feedbacks</span></a></li>
+                <li><a href="adminprofile.php"><i class="uil uil-user"></i><span class="link-name">Profile</span></a></li>
             </ul>
             
             <ul class="logout-mode">
-                <li><a href="../logout.php">
-                    <i class="uil uil-signout"></i>
-                    <span class="link-name">Logout</span>
-                </a></li>
-                <li class="mode">
-                    <a href="#">
-                        <i class="uil uil-moon"></i>
-                        <span class="link-name">Dark Mode</span>
-                    </a>
-                    <div class="mode-toggle">
-                      <span class="switch"></span>
-                    </div>
-                </li>
+                <li><a href="../logout.php"><i class="uil uil-signout"></i><span class="link-name">Logout</span></a></li>
+                <li class="mode"><a href="#"><i class="uil uil-moon"></i><span class="link-name">Dark Mode</span></a><div class="mode-toggle"><span class="switch"></span></div></li>
             </ul>
         </div>
     </nav>
@@ -93,12 +65,10 @@ if($_SESSION['name']==''){
                 <span class="notification-badge" id="notif-count">0</span>
                 <div class="notification-dropdown" id="notif-dropdown">
                     <div class="notif-header">Notifications</div>
-                    <div id="notif-list">
-                        <div class="notif-item">Loading...</div>
-                    </div>
+                    <div id="notif-list"><div class="notif-item">Loading...</div></div>
                 </div>
             </div>
-            </div>
+        </div>
         <br><br><br>
     
         <div class="activity">
@@ -137,31 +107,39 @@ if($_SESSION['name']==''){
                 <br>
 
                 <?php
-                // Get the selected location from the form
                 if(isset($_POST['location'])) {
                     $location = $_POST['location'];
-                    
-                    // Query the database
                     $sql = "SELECT * FROM food_donations WHERE location='$location'";
                     $result=mysqli_query($connection, $sql);
                     
                     if (mysqli_num_rows($result) > 0) {
-                        echo "<div class=\"table-container\">";
-                        echo "<div class=\"table-wrapper\">";
-                        echo "<table class=\"table\">";
-                        echo "<thead>";
-                        echo "<tr>
-                                <th>Name</th>
-                                <th>Food</th>
-                                <th>Category</th>
-                                <th>Phone No</th>
-                                <th>Date/Time</th>
-                                <th>Address</th>
-                                <th>Quantity</th>
-                              </tr>
-                              </thead><tbody>";
+                        // I have added the 'Status' header here
+                        echo "<div class=\"table-container\">
+                                <div class=\"table-wrapper\">
+                                    <table class=\"table\">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Food</th>
+                                                <th>Category</th>
+                                                <th>Phone No</th>
+                                                <th>Date/Time</th>
+                                                <th>Address</th>
+                                                <th>Quantity</th>
+                                                <th>Status</th> </tr>
+                                        </thead>
+                                        <tbody>";
 
                         while($row = mysqli_fetch_assoc($result)) {
+                            // Calculate Status Color
+                            $status = '<span style="color:red;">Pending</span>';
+                            if($row['delivery_status'] == 'Delivered'){
+                                $status = '<span style="color:green; font-weight:bold;">Delivered</span>';
+                            } elseif($row['assigned_to'] != null){
+                                $status = '<span style="color:orange;">Assigned</span>';
+                            }
+
+                            // I have added the status column data here
                             echo "<tr>
                                     <td data-label=\"name\">".$row['name']."</td>
                                     <td data-label=\"food\">".$row['food']."</td>
@@ -170,6 +148,7 @@ if($_SESSION['name']==''){
                                     <td data-label=\"date\">".$row['date']."</td>
                                     <td data-label=\"Address\">".$row['address']."</td>
                                     <td data-label=\"quantity\">".$row['quantity']."</td>
+                                    <td data-label=\"Status\">".$status."</td>
                                   </tr>";
                         }
                         echo "</tbody></table></div></div>";
@@ -183,7 +162,6 @@ if($_SESSION['name']==''){
     </section>
 
     <script src="admin.js"></script>
-    
     <script>
     function toggleNotif() {
         const dropdown = document.getElementById('notif-dropdown');
@@ -199,7 +177,6 @@ if($_SESSION['name']==''){
         .then(text => {
             try {
                 const data = JSON.parse(text);
-                
                 const badge = document.getElementById('notif-count');
                 if(data.count > 0){
                     badge.style.display = 'block';
@@ -216,23 +193,15 @@ if($_SESSION['name']==''){
                 } else {
                     data.messages.forEach(msg => {
                         const itemClass = msg.status === 'unread' ? 'notif-item unread' : 'notif-item';
-                        list.innerHTML += `
-                            <div class="${itemClass}">
-                                <strong>${msg.message}</strong>
-                                <span class="notif-time">${msg.date}</span>
-                            </div>`;
+                        list.innerHTML += `<div class="${itemClass}"><strong>${msg.message}</strong><span class="notif-time">${msg.date}</span></div>`;
                     });
                 }
-            } catch (e) {
-                console.error("JSON Parse Error", e);
-            }
+            } catch (e) { console.error("JSON Parse Error", e); }
         })
         .catch(error => console.error('Fetch Error:', error));
     }
-
     setInterval(loadNotifications, 5000);
     loadNotifications();
     </script>
-
 </body>
 </html>

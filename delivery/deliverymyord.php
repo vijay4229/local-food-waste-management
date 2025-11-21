@@ -1,197 +1,123 @@
 <?php
-ob_start(); 
-session_start(); // Crucial: Starts or resumes the session
-
-// Include database connection files
+ob_start();
+session_start();
 include '../connection.php';
-include("connect.php"); 
 
-// Enhanced Session/Login Check
-// Checks if EITHER 'name' OR 'Did' is missing from the session.
-if(empty($_SESSION['name']) || empty($_SESSION['Did'])){
+if($_SESSION['name']==''){
     header("location:deliverylogin.php");
-    exit(); // Always use exit() after a header redirect to stop script execution
 }
 
-// Session variables are now safely assigned
 $name = $_SESSION['name'];
+$email = $_SESSION['email'];
 $id = $_SESSION['Did'];
-?>
 
+if(isset($_POST['mark_delivered'])) {
+    $fid = $_POST['order_id'];
+    $sql = "UPDATE food_donations SET delivery_status='Delivered' WHERE Fid='$fid'";
+    $result = mysqli_query($connection, $sql);
+    
+    if($result){
+        header("location:deliverymyord.php");
+    }
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delivery My Orders</title>
+    <title>My Orders</title>
     <link rel="stylesheet" href="delivery.css">
     <link rel="stylesheet" href="../home.css">
+    <style>
+        .table-container { padding: 20px; overflow-x: auto; }
+        .table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; }
+        .table th, .table td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        .table th { background: #06C167; color: white; }
+        .btn-delivered { background: #28a745; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; }
+        .status-done { color: green; font-weight: bold; border: 1px solid green; padding: 5px; border-radius: 5px; }
+    </style>
 </head>
 <body>
 <header>
-        <div class="logo">Food <b style="color: #06C167;">Donate</b></div>
-        <div class="hamburger">
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-        </div>
-        <nav class="nav-bar">
-            <ul>
-                <li><a href="delivery.php" >Home</a></li>
-                <li><a href="openmap.php" >map</a></li>
-                <li><a href="deliverymyord.php"  class="active">myorders</a></li>
-    
-            </ul>
-        </nav>
-    </header>
-    <br>
-    <script>
-        hamburger=document.querySelector(".hamburger");
-        hamburger.onclick =function(){
-            navBar=document.querySelector(".nav-bar");
-            navBar.classList.toggle("active");
-        }
-    </script>
-    <style>
-        .itm{
-            background-color: white;
-            display: grid;
-        }
-        .itm img{
-            width: 400px;
-            height: 400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        p{
-            text-align: center; font-size: 28PX;color: black; 
-        }
-        a{
-            /* text-decoration: underline; */
-        }
-        @media (max-width: 767px) {
-            .itm{
-                /* float: left; */
-                
-            }
-            .itm img{
-                width: 350px;
-                height: 350px;
-            }
-        }
-    </style>
-
-        <div class="itm" >
-
-            <img src="../img/delivery.gif" alt="" width="400" height="400"> 
-          
-        </div>
-
-        <div class="get">
-            <?php
-
-// Define the SQL query to fetch orders assigned to the current delivery person ($id)
-// NOTE: $id is directly used in the query without sanitization. In a production environment, 
-// this is a severe security risk (SQL Injection) and should be fixed using prepared statements.
-$sql = "SELECT fd.Fid AS Fid, fd.name,fd.phoneno,fd.date,fd.delivery_by, fd.address as From_address, 
-ad.name AS delivery_person_name, ad.address AS To_address
-FROM food_donations fd
-LEFT JOIN admin ad ON fd.assigned_to = ad.Aid where delivery_by='$id';
-";
-
-// Execute the query
-$result=mysqli_query($connection, $sql);
-
-// Check for errors
-if (!$result) {
-    // Using $connection instead of $conn for mysqli_error
-    die("Error executing query: " . mysqli_error($connection)); 
-}
-
-// Fetch the data as an associative array
-$data = array();
-while ($row = mysqli_fetch_assoc($result)) {
-    $data[] = $row;
-}
-
-// Handle order assignment (This logic seems to belong more to 'delivery.php' if it's about taking orders, 
-// but is kept here as per your original code)
-if (isset($_POST['food']) && isset($_POST['delivery_person_id'])) {
-    $order_id = $_POST['order_id'];
-    $delivery_person_id = $_POST['delivery_person_id'];
-
-    // NOTE: SQL Injection risk here as well. Use prepared statements in production.
-    $sql = "UPDATE food_donations SET delivery_by = $delivery_person_id WHERE Fid = $order_id";
-    $result=mysqli_query($connection, $sql);
-
-    if (!$result) {
-        // Using $connection instead of $conn for mysqli_error
-        die("Error assigning order: " . mysqli_error($connection));
+    <div class="logo">Food <b style="color: #06C167;">Donate</b></div>
+    <div class="hamburger">
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+    </div>
+    <nav class="nav-bar">
+        <ul>
+            <li><a href="delivery.php">Home</a></li>
+            <li><a href="openmap.php">map</a></li>
+            <li><a href="deliverymyord.php" class="active">myorders</a></li>
+        </ul>
+    </nav>
+</header>
+<script>
+    hamburger=document.querySelector(".hamburger");
+    hamburger.onclick =function(){
+        navBar=document.querySelector(".nav-bar");
+        navBar.classList.toggle("active");
     }
+</script>
 
-    // Reload the page to prevent duplicate assignments
-    header('Location: ' . $_SERVER['REQUEST_URI']);
-    exit; // Use exit() after header
-    // ob_end_flush(); // No need for ob_end_flush() here after exit()
-}
-// mysqli_close($conn); // If you close the connection here, the rest of the page will fail
-
-?>
 <div class="log">
-<a href="delivery.php">Take orders</a>
-<p>Order assigned to you</p>
-<br>
+    <a href="delivery.php" style="margin: 20px; display: inline-block;">Take orders</a>
+    <p style="text-align: center; font-size: 28px;">Order assigned to you</p>
 </div>
-  
 
 <div class="table-container">
-                  <div class="table-wrapper">
-        <table class="table">
-        <thead>
-        <tr>
-            <th >Name</th>
-                                    <th>phoneno</th>
-            <th>date/time</th>
-            <th>Pickup address</th>
-            <th>Delivery address</th>
-                     
-          
-           
-        </tr>
-        </thead>
-       <tbody>
-
-        <?php foreach ($data as $row) { ?>
-        <?php    
-            echo "<tr>";
-            echo "<td data-label=\"name\">".$row['name']."</td>";
-            echo "<td data-label=\"phoneno\">".$row['phoneno']."</td>";
-            echo "<td data-label=\"date\">".$row['date']."</td>";
-            echo "<td data-label=\"Pickup Address\">".$row['From_address']."</td>";
-            echo "<td data-label=\"Delivery Address\">".$row['To_address']."</td>";
-            echo "<td>"; // Start of the extra data label cell
+    <div class="table-wrapper">
+        <?php
+        $sql = "SELECT fd.Fid AS Fid, fd.name, fd.phoneno, fd.date, fd.address as From_address, fd.delivery_status, ad.name AS delivery_person_name, ad.address AS To_address FROM food_donations fd LEFT JOIN admin ad ON fd.assigned_to = ad.Aid where delivery_by='$id'";
+        $result=mysqli_query($connection, $sql);
         ?>
-        
-                                                    </td>
-        </tr>
-        <?php } ?>
-    </tbody>
-</table>
-
-            </div>
-
-        
-     
-        
-
-   <br>
-   <br>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Date</th>
+                    <th>Pickup Address</th>
+                    <th>Delivery Address</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while($row = mysqli_fetch_assoc($result)) { ?>
+                <tr>
+                    <td data-label="name"><?php echo $row['name']; ?></td>
+                    <td data-label="phoneno"><?php echo $row['phoneno']; ?></td>
+                    <td data-label="date"><?php echo $row['date']; ?></td>
+                    <td data-label="Pickup Address"><?php echo $row['From_address']; ?></td>
+                    <td data-label="Delivery Address"><?php echo $row['To_address']; ?></td>
+                    <td data-label="Status">
+                        <?php 
+                        if($row['delivery_status'] == 'Delivered') {
+                            echo '<span style="color:green;">Delivered</span>';
+                        } else {
+                            echo '<span style="color:orange;">On Way</span>';
+                        }
+                        ?>
+                    </td>
+                    <td data-label="Action">
+                        <?php if($row['delivery_status'] != 'Delivered') { ?>
+                            <form method="post">
+                                <input type="hidden" name="order_id" value="<?php echo $row['Fid']; ?>">
+                                <button type="submit" name="mark_delivered" class="btn-delivered">Mark Delivered</button>
+                            </form>
+                        <?php } else { ?>
+                            <span class="status-done">Done</span>
+                        <?php } ?>
+                    </td>
+                </tr>
+                <?php } ?>
+            </tbody>
+        </table>
+    </div>
+</div>
 </body>
 </html>
-
-<?php
-// End output buffering after all content is sent
-ob_end_flush(); 
-?>
